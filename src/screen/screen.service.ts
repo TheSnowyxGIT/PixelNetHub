@@ -1,7 +1,7 @@
 // import * as ws281x from 'rpi-ws281x';
 import { Injectable, Logger } from '@nestjs/common';
-import { Socket, io } from 'socket.io-client';
 import { Color, PixelMatrix, Point } from 'pixels-matrix';
+import { Server, Socket } from 'socket.io';
 
 export abstract class IScreen {
   public abstract render(matrix: PixelMatrix): void;
@@ -40,37 +40,31 @@ export class Ws281xScreen extends IScreen {
 
 export class VirtualWSScreen extends IScreen {
   private logger = new Logger(VirtualWSScreen.name);
-  private socket: Socket;
-  private connected = false;
-  private errorLogged = false;
-  constructor(size: Point) {
+  private io: Server;
+  private clients: Set<Socket> = new Set();
+  constructor(private size: Point) {
     super();
-    this.socket = io(process.env.WS_URL ?? 'http://localhost:8080');
-    this.socket.on('connect', () => {
-      this.logger.log('VirtualWSScreen connected');
-      this.connected = true;
-      this.errorLogged = false;
-      this.socket.emit('register', { width: size.x, height: size.y });
+    this.io = new Server();
+    const port = process.env.VIRTUAL_SCREEN_PORT
+      ? Number(process.env.VIRTUAL_SCREEN_PORT)
+      : 3001;
+    this.io.listen(port);
+    this.logger.log(`VirtualWSScreen listening on port ${port}`);
+
+    this.io.on('connection', (socket) => {
+      this.logger.log(`VirtualWSScreen client connected: ${socket.id}`);
+      this.clients.add(socket);
+      socket.emit('init', this.size);
       this.fn?.();
-    });
 
-    this.socket.on('connect_error', (error) => {
-      if (!this.errorLogged) {
-        this.logger.warn('VirtualWSScreen connect_error', error);
-        this.errorLogged = true;
-      }
-    });
-
-    this.socket.on('disconnect', (reason) => {
-      this.logger.warn('Disconnected:', reason);
-      this.connected = false;
+      socket.on('disconnect', () => {
+        this.logger.log(`VirtualWSScreen client disconnected: ${socket.id}`);
+        this.clients.delete(socket);
+      });
     });
   }
   public render(matrix: PixelMatrix): void {
-    if (!this.connected) {
-      return;
-    }
-    this.socket.emit('render', matrix.ToArray().buffer);
+    this.io.emit('render', matrix.ToArray().buffer);
   }
 }
 
