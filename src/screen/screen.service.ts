@@ -122,23 +122,7 @@ export class ScreenService {
     option?: MatrixOption,
     refresh = true,
   ): void {
-    option = option ?? {};
-    option.xOffset = option.xOffset ?? 0;
-    for (let y = 0; y < Math.min(grayScale.length, this.resolution_.y); y++) {
-      for (
-        let x = 0;
-        x < Math.min(grayScale[y].length, this.resolution_.x);
-        x++
-      ) {
-        if (grayScale[y][x] > 0) {
-          this.setPixel(
-            { x: x + option.xOffset, y: y },
-            Color.colorWithRatio(color, grayScale[y][x]),
-            false,
-          );
-        }
-      }
-    }
+    this.matrix_.setMatrix(grayScale, color, option);
     this.refresh(refresh);
   }
 
