@@ -54,7 +54,7 @@ export class VirtualWSScreen extends IScreen {
     this.io.on('connection', (socket) => {
       this.logger.log(`VirtualWSScreen client connected: ${socket.id}`);
       this.clients.add(socket);
-      socket.emit('init', this.size);
+      socket.emit('init', { width: this.size.x, height: this.size.y });
       this.fn?.();
 
       socket.on('disconnect', () => {

@@ -4,6 +4,7 @@ import { FontsService } from 'src/fonts/fonts.service';
 import { ScreenService } from 'src/screen/screen.service';
 import TimeApp from './apps/TimeApp';
 import { AppLoggerService } from './app-logger/app-logger.service';
+import TimeAppBis from './apps/TimeAppBis';
 
 @Injectable()
 export class ApplicationsService {
@@ -25,6 +26,12 @@ export class ApplicationsService {
   private appsSpawner: (() => IApplication<any>)[] = [
     () =>
       new TimeApp(this.fontService, this.screenService, this.appLoggerService),
+    () =>
+      new TimeAppBis(
+        this.fontService,
+        this.screenService,
+        this.appLoggerService,
+      ),
   ];
   private appsSpawnerMap: Map<string, () => IApplication<any>> = new Map();
   private appsInfoMap: Map<string, IApplicationInfo> = new Map();
