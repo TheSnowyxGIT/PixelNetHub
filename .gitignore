@@ -1,6 +1,6 @@
 # compiled output
 /dist
-/node_modules
+node_modules
 
 # Logs
 logs
@@ -36,3 +36,9 @@ lerna-debug.log*
 
 .env
 fonts
+customApps
+
+appdata
+stored-apps
+stored-fonts
+stored-runner-app

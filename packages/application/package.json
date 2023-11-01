@@ -1,0 +1,22 @@
+{
+  "name": "pixel-nethub-application",
+  "version": "0.0.7",
+  "scripts": {
+    "build": "tsc"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "class-transformer": "^0.5.1",
+    "pixel-nethub-options": "^0.0.1",
+    "pixels-matrix": "^1.0.6",
+    "text2matrix": "^1.1.8"
+  },
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.js",
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
