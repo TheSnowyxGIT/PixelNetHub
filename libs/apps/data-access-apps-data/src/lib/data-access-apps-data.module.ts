@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DataAccessAppsDataRepository } from './data-access-apps-data.repository';
-import { AppData } from 'libs/apps/feature-app/src';
-import { AppDataSchema } from './data-access-apps-data.model';
+import { AppData, AppDataSchema } from './data-access-apps-data.model';
 
 @Module({
   imports: [

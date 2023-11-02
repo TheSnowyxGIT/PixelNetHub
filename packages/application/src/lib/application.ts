@@ -1,10 +1,9 @@
 import { EventEmitter } from 'events';
-import { checkApp } from './app-checker';
-import { OptionValidator, TypesManager } from 'pixel-nethub-options';
 import path = require('path');
 import { IFontService } from './interfaces';
 import { IScreenService } from './interfaces/iScreenService';
-import { existsSync } from 'fs';
+import { AppError } from './errors/AppError';
+import { checkApp } from './checker/app-checker';
 
 export interface AppStartParams {
   options: any;
@@ -12,64 +11,67 @@ export interface AppStartParams {
   fontsService: IFontService;
 }
 
-export interface AppInterface {
-  start(context: AppStartParams): void;
-  stop(): Promise<void>;
+type AppBaseConstructor = new (context: AppStartParams) => AppBase;
+abstract class AppBase implements AppStartParams {
+  constructor(context: AppStartParams) {
+    this.options = context.options;
+    this.screenService = context.screenService;
+    this.fontsService = context.fontsService;
+  }
+  options: any;
+  screenService: IScreenService;
+  fontsService: IFontService;
+
+  abstract onStart(): Promise<void> | void;
+  abstract onStop(): Promise<void> | void;
 }
 
-export class APP extends EventEmitter {
-  private appImported?: AppInterface;
-  constructor(private readonly appPath: string) {
-    super();
+export class AppInstance {
+  static async create(appPath: string) {
+    checkApp(appPath);
+    const instance = new AppInstance(appPath);
+    await instance.loadApp();
+    return instance;
   }
 
-  async validateStructureApp() {
-    await checkApp(this.appPath);
-  }
+  private appBaseInstance: AppBase | null = null;
+  private appConstructor?: AppBaseConstructor;
+  private deleteOnStop = false;
 
-  async validateOptionsApp(option: any, typeManager: TypesManager) {
-    if (!option) {
-      return;
-    }
-    const optionSchema = await this.getOptionSchema();
-    const optionsValidator = new OptionValidator(
-      option,
-      optionSchema,
-      typeManager,
-    );
-    await optionsValidator.validate();
-  }
-
-  async getOptionSchema() {
-    const optionsPath = path.join(this.appPath, 'options.json');
-    const optionSchema = await import(optionsPath);
-    return optionSchema;
-  }
+  private constructor(private readonly appPath: string) {}
 
   async loadApp() {
-    const app = await import(path.resolve(this.appPath));
-    if (app && !app.start && app.default) {
-      this.appImported = app.default as AppInterface;
-    } else {
-      this.appImported = app as AppInterface;
+    let importedObj: any;
+    try {
+      importedObj = await import(path.resolve(this.appPath));
+    } catch (e) {
+      throw new Error('Error loading app');
     }
+    if (importedObj && importedObj.default) {
+      importedObj = importedObj.default;
+    }
+    this.appConstructor = importedObj as AppBaseConstructor;
   }
 
-  private running = false;
-
   start(context: AppStartParams) {
-    if (this.running === true) {
+    if (this.appBaseInstance !== null) {
       return;
     }
-    this.running = true;
-    this.appImported?.start(context);
+    if (!this.appConstructor) {
+      throw new AppError('App not loaded');
+    }
+    this.appBaseInstance = new this.appConstructor(context);
+    this.appBaseInstance.onStart();
   }
 
   stop() {
-    if (this.running === false) {
+    if (this.appBaseInstance === null) {
       return;
     }
-    this.running = false;
-    this.appImported?.stop();
+    if (!this.appConstructor) {
+      throw new AppError('App not loaded');
+    }
+    this.appBaseInstance.onStop();
+    this.appBaseInstance = null;
   }
 }

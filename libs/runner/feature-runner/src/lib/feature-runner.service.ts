@@ -44,7 +44,8 @@ export class FeatureRunnerService {
     if (!app) {
       throw new RunnerAppNotFoundError(appName);
     }
-    const appPath = await this.appsPrepare.prepareApp(app);
+    // const appPath = await this.appsPrepare.prepareApp(app);
+    const appPath = '';
 
     // Load the new app
     this.currentApplication = new application.APP(appPath);

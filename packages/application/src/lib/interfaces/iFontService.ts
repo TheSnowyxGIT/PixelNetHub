@@ -1,5 +1,4 @@
 import { Expose } from 'class-transformer';
-import * as text2matrix from 'text2matrix';
 
 export class FontData {
   @Expose()
@@ -7,7 +6,7 @@ export class FontData {
 }
 
 export type Font = FontData & {
-  font: text2matrix.Font;
+  font: Buffer;
 };
 
 export interface IFontService {
