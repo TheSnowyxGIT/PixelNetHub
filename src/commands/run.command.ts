@@ -7,9 +7,12 @@ import {
   AppConfiguration,
   appConfiguration,
 } from 'libs/config/utils-config/src';
+import { FeatureRunnerService } from 'libs/runner/feature-runner/src';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface RunCommandOptions {}
+export interface RunCommandOptions {
+  startApp: string;
+}
 
 @Command({ name: 'run', description: 'run the API' })
 export class RunCommand extends CommandRunnerWithNestLogger {
@@ -27,5 +30,18 @@ export class RunCommand extends CommandRunnerWithNestLogger {
     this.logger.log(
       `🚀 Application is running on: ${config.domain}/${globalPrefix}`,
     );
+
+    if (options.startApp) {
+      const runner = app.get<FeatureRunnerService>(FeatureRunnerService);
+      await runner.startFromPath(options.startApp);
+    }
+  }
+
+  @Option({
+    flags: '--start-app [appPath]',
+    required: false,
+  })
+  parseStartApp(appPath: string): string {
+    return appPath;
   }
 }

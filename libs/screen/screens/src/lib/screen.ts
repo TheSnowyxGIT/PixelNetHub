@@ -11,6 +11,7 @@ export abstract class IScreen {
   public onLoaded(fn: () => void): void {
     this.fn = fn;
   }
+  public abstract close(): void;
 }
 
 // export class Ws281xScreen extends IScreen {
@@ -63,6 +64,11 @@ export class VirtualWSScreen extends IScreen {
       });
     });
   }
+
+  public close(): void {
+    this.io.close();
+  }
+
   public render(matrix: PixelMatrix): void {
     this.io.emit('render', matrix.ToArray().buffer);
   }
@@ -72,6 +78,7 @@ export class RemoteWSScreen extends IScreen {
   private ws?: WebSocket;
   private url: string;
   private reconnectIntervalId: any;
+  private closeRequested = false;
 
   constructor(private size: Point, url: string, logger?: Logger) {
     super(logger);
@@ -79,7 +86,28 @@ export class RemoteWSScreen extends IScreen {
     this.connect();
   }
 
+  public close(): void {
+    this.logger?.log('Closing RemoteWSScreen...');
+    this.closeRequested = true;
+    this.clearReconnectInterval();
+    if (this.ws) {
+      // Only listen for the close event if we're not already closed or closing.
+      if (this.ws.readyState === WebSocket.OPEN) {
+        this.ws.close();
+      } else if (this.ws.readyState === WebSocket.CONNECTING) {
+        this.ws.terminate(); // Immediately terminate the connection if still connecting
+      }
+      this.ws.onclose = () => {
+        // Listen for the close event to log it
+        this.logger?.log(`WebSocket connection to ${this.url} closed.`);
+      };
+    }
+  }
+
   private connect(): void {
+    if (this.closeRequested) {
+      return;
+    }
     this.logger?.log(`RemoteWSScreen will try to connect to ${this.url}`);
     this.ws = new WebSocket(this.url);
 
@@ -101,7 +129,7 @@ export class RemoteWSScreen extends IScreen {
   }
 
   private attemptReconnect(): void {
-    if (!this.reconnectIntervalId) {
+    if (!this.reconnectIntervalId && !this.closeRequested) {
       this.reconnectIntervalId = setInterval(() => this.connect(), 10000);
     }
   }

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import * as pm from 'pixels-matrix';
 import { IScreen, RemoteWSScreen } from 'libs/screen/screens/src';
 import {
@@ -9,7 +9,7 @@ import {
 } from 'packages/application/src';
 
 @Injectable()
-export class FeatureScreenService implements IScreenService {
+export class FeatureScreenService implements IScreenService, OnModuleDestroy {
   private screens_: IScreen[] = [];
   private logger = new Logger(FeatureScreenService.name);
   private matrix_: pm.PixelMatrix;
@@ -42,6 +42,12 @@ export class FeatureScreenService implements IScreenService {
     }
   }
 
+  onModuleDestroy() {
+    for (const screen of this.screens_) {
+      screen.close();
+    }
+  }
+
   private getColor(color: Color): pm.Color {
     if (typeof color === 'string') {
       return pm.Color.FromHEX(color);
@@ -55,7 +61,6 @@ export class FeatureScreenService implements IScreenService {
   clear(refresh?: boolean | undefined): void {
     this.fill('#000000', refresh);
   }
-
   fill(color: Color, refresh?: boolean | undefined): void {
     this.matrix_.fillColor(this.getColor(color));
     this.refresh(refresh);

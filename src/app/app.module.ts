@@ -9,6 +9,7 @@ import {
 import { FeatureFontModule } from 'libs/fonts/feature-font/src';
 import { FeatureRunnerModule } from 'libs/runner/feature-runner/src';
 import { FeatureScreenModule } from 'libs/screen/feature-screen/src';
+import { FeatureAppModule } from 'libs/apps/feature-app/src';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { FeatureScreenModule } from 'libs/screen/feature-screen/src';
     FeatureFontModule,
     FeatureScreenModule,
     FeatureRunnerModule,
+    FeatureAppModule,
   ],
   controllers: [],
   providers: [AppService],

@@ -1,51 +1,53 @@
-import { EventEmitter } from 'events';
 import path = require('path');
-import { IFontService } from './interfaces';
-import { IScreenService } from './interfaces/iScreenService';
 import { AppError } from './errors/AppError';
 import { checkApp } from './checker/app-checker';
+import { AppBase, AppBaseConstructor, AppStartParams } from './interfaces';
+import {
+  AppPackageJson,
+  AppPackageJsonParser,
+} from './parser/packageJson-parser';
 
-export interface AppStartParams {
-  options: any;
-  screenService: IScreenService;
-  fontsService: IFontService;
-}
-
-type AppBaseConstructor = new (context: AppStartParams) => AppBase;
-abstract class AppBase implements AppStartParams {
-  constructor(context: AppStartParams) {
-    this.options = context.options;
-    this.screenService = context.screenService;
-    this.fontsService = context.fontsService;
+export class AppMetadata {
+  static async load(appPath: string) {
+    await checkApp(appPath);
+    const metadata = new AppMetadata(appPath);
+    await metadata.loadMetadata();
+    return metadata;
   }
-  options: any;
-  screenService: IScreenService;
-  fontsService: IFontService;
 
-  abstract onStart(): Promise<void> | void;
-  abstract onStop(): Promise<void> | void;
+  public metadata: AppPackageJson;
+  public get name() {
+    return this.metadata.name;
+  }
+  public get version() {
+    return this.metadata.version;
+  }
+
+  private constructor(public readonly appPath: string) {}
+  async loadMetadata() {
+    this.metadata = await new AppPackageJsonParser().validate(this.appPath);
+  }
 }
 
 export class AppInstance {
-  static async create(appPath: string) {
-    checkApp(appPath);
-    const instance = new AppInstance(appPath);
+  static async instantiate(appMetaData: AppMetadata, context: AppStartParams) {
+    const instance = new AppInstance(appMetaData);
     await instance.loadApp();
+    await instance.start(context);
     return instance;
   }
 
   private appBaseInstance: AppBase | null = null;
   private appConstructor?: AppBaseConstructor;
-  private deleteOnStop = false;
 
-  private constructor(private readonly appPath: string) {}
+  private constructor(private readonly appMetaData: AppMetadata) {}
 
   async loadApp() {
     let importedObj: any;
     try {
-      importedObj = await import(path.resolve(this.appPath));
+      importedObj = await import(path.resolve(this.appMetaData.appPath));
     } catch (e) {
-      throw new Error('Error loading app');
+      throw new AppError('Error loading app');
     }
     if (importedObj && importedObj.default) {
       importedObj = importedObj.default;
@@ -53,25 +55,26 @@ export class AppInstance {
     this.appConstructor = importedObj as AppBaseConstructor;
   }
 
-  start(context: AppStartParams) {
+  async start(context: AppStartParams) {
     if (this.appBaseInstance !== null) {
       return;
     }
     if (!this.appConstructor) {
       throw new AppError('App not loaded');
     }
-    this.appBaseInstance = new this.appConstructor(context);
-    this.appBaseInstance.onStart();
+    this.appBaseInstance = new this.appConstructor();
+    Object.assign(this.appBaseInstance, context);
+    await this.appBaseInstance.onStart();
   }
 
-  stop() {
+  async stop() {
     if (this.appBaseInstance === null) {
       return;
     }
     if (!this.appConstructor) {
       throw new AppError('App not loaded');
     }
-    this.appBaseInstance.onStop();
+    await this.appBaseInstance.onStop();
     this.appBaseInstance = null;
   }
 }

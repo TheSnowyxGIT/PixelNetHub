@@ -3,7 +3,7 @@ import { FeatureRunnerService } from 'libs/runner/feature-runner/src';
 
 @Injectable()
 export class AppService {
-  constructor(private readonly runnerService: FeatureRunnerService) {
+  constructor() {
     this.main();
   }
 
@@ -14,6 +14,5 @@ export class AppService {
     //   const font = await this.fontPublicService.getFont(fonts[0].name);
     //   console.log(font);
     // }
-    this.runnerService.startLocalApp('customApps/time-app');
   }
 }
