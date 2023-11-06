@@ -5,7 +5,7 @@ export abstract class RunnerError extends Error {
 }
 
 export class RunnerAppNotFoundError extends RunnerError {
-  constructor(appName: string) {
-    super(`App ${appName} does not exist`);
+  constructor(appName: string, version?: string) {
+    super(`App ${appName}${version ? `@${version}` : ''} not found`);
   }
 }

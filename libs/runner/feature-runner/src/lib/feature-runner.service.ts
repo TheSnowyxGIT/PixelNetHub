@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { RunnerAppNotFoundError } from './errors/RunnerError';
 import { FeatureAppService } from 'libs/apps/feature-app/src';
@@ -9,6 +9,7 @@ import * as application from 'packages/application/src';
 @Injectable()
 export class FeatureRunnerService {
   private currentApplication: application.AppInstance | null = null;
+  private readonly logger = new Logger(FeatureRunnerService.name);
   constructor(
     private readonly appsService: FeatureAppService,
     private readonly moduleRef: ModuleRef,
@@ -31,7 +32,7 @@ export class FeatureRunnerService {
       app = await this.appsService.getApp(appName, version);
     }
     if (!app) {
-      throw new RunnerAppNotFoundError(appName);
+      throw new RunnerAppNotFoundError(appName, version);
     }
     const appMetaData = await application.AppMetadata.load(app.appPath);
     await this.startAppInstance(appMetaData);
@@ -55,11 +56,15 @@ export class FeatureRunnerService {
         }),
       },
     );
+    this.logger.log(`Starting app ${appInstance.name}@${appInstance.version}`);
   }
 
   public async stopApp() {
     if (this.isRunning()) {
       await this.currentApplication?.stop();
+      this.logger.log(
+        `Stopped app ${this.currentApplication?.appMetaData.name}@${this.currentApplication?.appMetaData.version}`,
+      );
     }
   }
 }

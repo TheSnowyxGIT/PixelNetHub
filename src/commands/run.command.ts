@@ -11,7 +11,7 @@ import { FeatureRunnerService } from 'libs/runner/feature-runner/src';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface RunCommandOptions {
-  startApp: string;
+  startAppPath: string;
 }
 
 @Command({ name: 'run', description: 'run the API' })
@@ -31,17 +31,17 @@ export class RunCommand extends CommandRunnerWithNestLogger {
       `🚀 Application is running on: ${config.domain}/${globalPrefix}`,
     );
 
-    if (options.startApp) {
+    if (options.startAppPath) {
       const runner = app.get<FeatureRunnerService>(FeatureRunnerService);
-      await runner.startFromPath(options.startApp);
+      await runner.startFromPath(options.startAppPath);
     }
   }
 
   @Option({
-    flags: '--start-app [appPath]',
+    flags: '--start-app-path [appPath]',
     required: false,
   })
-  parseStartApp(appPath: string): string {
+  parseStartAppPath(appPath: string): string {
     return appPath;
   }
 }

@@ -1,8 +1,9 @@
-import { Command, SubCommand } from 'nest-commander';
+import { Command, SubCommand, Option } from 'nest-commander';
 import { CommandRunnerWithNestLogger } from './utils/command-runner-nest-logger.interface';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from 'src/app/app.module';
 import { FeatureAppService } from 'libs/apps/feature-app/src';
+import { FeatureRunnerService } from 'libs/runner/feature-runner/src';
 
 @SubCommand({
   name: 'install',
@@ -29,10 +30,40 @@ export class AppInstallCommand extends CommandRunnerWithNestLogger {
   }
 }
 
+@SubCommand({
+  name: 'run',
+  arguments: '<appName>',
+  description: 'Run an application',
+  options: { isDefault: false },
+})
+export class AppStartCommand extends CommandRunnerWithNestLogger {
+  constructor() {
+    super(AppStartCommand.name);
+  }
+
+  async run(passedParams: string[], options: { version?: string }) {
+    const [appName] = passedParams;
+    if (!appName) {
+      throw new Error('Missing app name');
+    }
+    const app = await NestFactory.create(AppModule);
+    const runnerService = app.get(FeatureRunnerService);
+    await runnerService.startFromDownloadedApps(appName, options.version);
+  }
+
+  @Option({
+    flags: '--version [version]',
+    required: false,
+  })
+  parseVersion(version: string): string {
+    return version;
+  }
+}
+
 @Command({
   name: 'app',
   description: 'App management commands.',
-  subCommands: [AppInstallCommand],
+  subCommands: [AppInstallCommand, AppStartCommand],
 })
 export class AppCommand extends CommandRunnerWithNestLogger {
   constructor() {

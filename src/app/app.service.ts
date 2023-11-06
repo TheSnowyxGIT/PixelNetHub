@@ -3,16 +3,13 @@ import { FeatureRunnerService } from 'libs/runner/feature-runner/src';
 
 @Injectable()
 export class AppService {
-  constructor() {
+  constructor(private readonly featureRunnerService: FeatureRunnerService) {
     this.main();
   }
 
   async main() {
-    // const fonts = await this.fontPublicService.getAllFontsData();
-    // console.log(fonts);
-    // if (fonts.length > 0) {
-    //   const font = await this.fontPublicService.getFont(fonts[0].name);
-    //   console.log(font);
-    // }
+    // setTimeout(async () => {
+    //   this.featureRunnerService.startFromDownloadedApps('time-app');
+    // }, 1000);
   }
 }
