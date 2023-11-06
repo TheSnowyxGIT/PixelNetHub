@@ -3,19 +3,17 @@ import {
   InjectAppsConfig,
   AppsConfiguration,
 } from 'libs/config/utils-config/src';
-import * as application from 'packages/application/src';
 import path = require('path');
 import fs = require('fs');
 import decompress = require('decompress');
 import semver = require('semver');
+import * as core from 'pixel-nethub-core';
 
 @Injectable()
 export class FeatureAppService {
   private logger = new Logger(FeatureAppService.name);
-  private readonly applications: Map<
-    string,
-    Map<string, application.AppMetadata>
-  > = new Map();
+  private readonly applications: Map<string, Map<string, core.AppMetadata>> =
+    new Map();
 
   constructor(
     @InjectAppsConfig() private readonly appsConfig: AppsConfiguration,
@@ -29,9 +27,9 @@ export class FeatureAppService {
     this.logger.log(`Loading apps (Found ${files.length} apps)`);
     for (const file of files) {
       const appPath = path.join(appsDir, file);
-      let appMetaData: application.AppMetadata;
+      let appMetaData: core.AppMetadata;
       try {
-        appMetaData = await application.AppMetadata.load(appPath);
+        appMetaData = await core.AppMetadata.load(appPath);
       } catch (e) {
         this.logger.error(`Error loading app ${file}`);
         continue;
@@ -45,8 +43,8 @@ export class FeatureAppService {
     }
   }
 
-  async addApp(zipPath: string): Promise<application.AppMetadata> {
-    const appMetaData = await application.AppMetadata.load(zipPath);
+  async addApp(zipPath: string): Promise<core.AppMetadata> {
+    const appMetaData = await core.AppMetadata.load(zipPath);
     const appName = appMetaData.name;
     const appVersion = appMetaData.version;
     const appDirName = `${appName}-${appVersion}`;
@@ -96,7 +94,7 @@ export class FeatureAppService {
   async getApp(
     name: string,
     version: string,
-  ): Promise<application.AppMetadata | null> {
+  ): Promise<core.AppMetadata | null> {
     const appVersions = this.applications.get(name);
     if (!appVersions || !appVersions.has(version)) {
       return null;
@@ -117,8 +115,8 @@ export class FeatureAppService {
     return appVersions.get(latest);
   }
 
-  async getApps(): Promise<application.AppMetadata[]> {
-    const apps: application.AppMetadata[] = [];
+  async getApps(): Promise<core.AppMetadata[]> {
+    const apps: core.AppMetadata[] = [];
     for (const appVersions of this.applications.values()) {
       for (const app of appVersions.values()) {
         apps.push(app);

@@ -8,7 +8,6 @@ import {
 } from 'libs/config/utils-config/src';
 import { FeatureFontModule } from 'libs/fonts/feature-font/src';
 import { FeatureRunnerModule } from 'libs/runner/feature-runner/src';
-import { FeatureScreenModule } from 'libs/screen/feature-screen/src';
 import { FeatureAppModule } from 'libs/apps/feature-app/src';
 
 @Module({
@@ -26,7 +25,6 @@ import { FeatureAppModule } from 'libs/apps/feature-app/src';
       },
     }),
     FeatureFontModule,
-    FeatureScreenModule,
     FeatureRunnerModule,
     FeatureAppModule,
   ],

@@ -11,7 +11,6 @@ export async function executeApplication(appPath: string, config?: unknown) {
 
   if (!config) {
     config = {
-      screenSize: [32, 8],
       screens: [
         {
           type: 'ws-server',
