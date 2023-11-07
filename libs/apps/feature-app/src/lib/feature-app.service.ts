@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   InjectAppsConfig,
   AppsConfiguration,
@@ -8,6 +8,7 @@ import fs = require('fs');
 import decompress = require('decompress');
 import semver = require('semver');
 import * as core from 'pixel-nethub-core';
+import { App } from './model/App';
 
 @Injectable()
 export class FeatureAppService {
@@ -72,7 +73,7 @@ export class FeatureAppService {
     const appDirName = `${name}-${version}`;
     const appVersions = this.applications.get(name);
     if (!appVersions || !appVersions.has(version)) {
-      throw new Error('App not found');
+      throw new NotFoundException();
     }
     appVersions.delete(version);
     const distPath = path.join(this.appsConfig.appsLocalDir, appDirName);
@@ -84,7 +85,7 @@ export class FeatureAppService {
   async removeAppAllVersions(name: string): Promise<void> {
     const appVersions = this.applications.get(name);
     if (!appVersions) {
-      throw new Error('App not found');
+      throw new NotFoundException();
     }
     for (const [version] of appVersions) {
       await this.removeApp(name, version);
@@ -123,5 +124,27 @@ export class FeatureAppService {
       }
     }
     return apps;
+  }
+
+  async getAppsGroupByVersion(): Promise<App[]> {
+    const apps: App[] = [];
+    for (const [name, appVersions] of this.applications.entries()) {
+      apps.push({
+        name,
+        versions: Array.from(appVersions.keys()),
+      });
+    }
+    return apps;
+  }
+
+  async getAppGroupByVersion(name: string): Promise<App> {
+    const appVersions = this.applications.get(name);
+    if (!appVersions) {
+      return null;
+    }
+    return {
+      name,
+      versions: Array.from(appVersions.keys()),
+    };
   }
 }

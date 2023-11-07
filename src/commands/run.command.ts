@@ -8,6 +8,7 @@ import {
   appConfiguration,
 } from 'libs/config/utils-config/src';
 import { FeatureRunnerService } from 'libs/runner/feature-runner/src';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface RunCommandOptions {
@@ -23,6 +24,14 @@ export class RunCommand extends CommandRunnerWithNestLogger {
   async run(passedParam: string[], options: RunCommandOptions): Promise<void> {
     this.logger.log(`Launching the '${this.command.name()}' command...`);
     const app = await NestFactory.create(AppModule);
+
+    const openApiConfig = new DocumentBuilder()
+      .setTitle('PNH API')
+      .setDescription('The PNH API description')
+      .build();
+    const document = SwaggerModule.createDocument(app, openApiConfig);
+    SwaggerModule.setup('api', app, document);
+
     const config = app.get<AppConfiguration>(appConfiguration.KEY);
     const globalPrefix = '';
     app.setGlobalPrefix(globalPrefix);

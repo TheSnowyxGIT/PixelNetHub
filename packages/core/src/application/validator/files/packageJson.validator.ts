@@ -1,14 +1,14 @@
 import { object, string } from 'yup';
 import semver = require('semver');
-import FileValidator from '../file-validator.class';
 import { ValidationError } from '../../errors/AppCheckerError';
+import JsonValidator from '../json-validator.class';
 
 export interface PackageJson {
   name: string;
   version: string;
 }
 
-export class PackageJsonValidator extends FileValidator<PackageJson> {
+export class PackageJsonValidator extends JsonValidator<PackageJson> {
   filePath = 'package.json';
   schema = object({
     name: string().required(),

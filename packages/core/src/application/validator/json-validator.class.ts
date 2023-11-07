@@ -4,8 +4,9 @@ import JSZip = require('jszip');
 import { Schema } from 'yup';
 import path = require('path');
 import { ValidationError } from '../errors/AppCheckerError';
+import { Validator } from './validator.class';
 
-export default abstract class FileValidator<T> {
+export default abstract class JsonValidator<T> extends Validator<T> {
   abstract filePath: string;
   abstract schema: Schema<any>;
 
