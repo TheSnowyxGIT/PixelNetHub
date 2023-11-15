@@ -1,12 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AppMetadata } from 'pixel-nethub-core';
-import * as FileStreamRotator from 'file-stream-rotator';
+import FileStreamRotator from 'file-stream-rotator/lib/FileStreamRotator';
 import { mkdirSync, readdirSync, rmSync, statSync, unlinkSync } from 'fs';
 import {
   AppConfiguration,
   InjectAppConfig,
 } from 'libs/config/utils-config/src';
 import path = require('path');
+
+export type AppLogger = FileStreamRotator & { logsDir: string };
 
 @Injectable()
 export class FeatureAppLoggerService {
@@ -52,7 +54,7 @@ export class FeatureAppLoggerService {
     }
   }
 
-  public getStreamRotator(appMetaData: AppMetadata) {
+  public getStreamRotator(appMetaData: AppMetadata): AppLogger {
     const date = Date.now();
     const dir = `${this.logsPath}/${date}-${appMetaData.name}@${appMetaData.version}`;
     mkdirSync(dir, { recursive: true });
@@ -63,6 +65,6 @@ export class FeatureAppLoggerService {
       audit_file: `${dir}/audit.json`,
       extension: '.log',
     });
-    return rotatingLogStream;
+    return Object.assign(rotatingLogStream, { logsDir: dir });
   }
 }

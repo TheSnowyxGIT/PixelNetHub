@@ -11,6 +11,7 @@ import {
 } from 'libs/config/utils-config/src';
 import { writeFileSync } from 'fs';
 import { FeatureAppLoggerService } from 'libs/apps/feature-app-logger/src';
+import { FeatureAppHistoryService } from 'libs/apps/feature-app-history/src';
 
 @Injectable()
 export class FeatureRunnerService {
@@ -23,6 +24,7 @@ export class FeatureRunnerService {
   constructor(
     private readonly appsService: FeatureAppService,
     private readonly appLoggerService: FeatureAppLoggerService,
+    private readonly appHistoryService: FeatureAppHistoryService,
     @InjectAppConfig() private readonly appConfig: AppConfiguration,
   ) {
     const config = this.getPNHAppConfig();
@@ -65,7 +67,6 @@ export class FeatureRunnerService {
     }
 
     const streamRouter = this.appLoggerService.getStreamRotator(appMetaData);
-
     // Start the new app
     this.appInstance = AppCoreInstance.create(
       appMetaData,
@@ -83,6 +84,7 @@ export class FeatureRunnerService {
           `App ${appMetaData.name}@${appMetaData.version} closed with return code ${this.appInstance.returnCode}`,
         );
       }
+      this.appHistoryService.addHistoryEntry(this.appInstance);
       this.appInstance = undefined;
     });
 

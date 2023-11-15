@@ -3,12 +3,13 @@ import { EventEmitter } from 'events';
 import { AppMetadata } from 'pixel-nethub-core/dist';
 import FileStreamRotator from 'file-stream-rotator/lib/FileStreamRotator';
 import { readFileSync } from 'fs';
+import { AppLogger } from 'libs/apps/feature-app-logger/src';
 
 export class AppCoreInstance extends EventEmitter {
   static create(
     appMetaData: AppMetadata,
     appPath: string,
-    streamRotator: FileStreamRotator,
+    streamRotator: AppLogger,
   ) {
     return new AppCoreInstance(appMetaData, appPath, streamRotator);
   }
@@ -18,10 +19,15 @@ export class AppCoreInstance extends EventEmitter {
   private child: ChildProcessWithoutNullStreams;
   public running = true;
   public returnCode: number | null = null;
+  public startDate = new Date();
+  public endDate: Date | null = null;
+  public get logsDir() {
+    return this.streamRotator.logsDir;
+  }
   private constructor(
     public readonly appMetaData: AppMetadata,
     private readonly appPath: string,
-    private readonly streamRotator: FileStreamRotator,
+    private readonly streamRotator: AppLogger,
   ) {
     super();
     this.child = spawn('npx', [
@@ -35,6 +41,7 @@ export class AppCoreInstance extends EventEmitter {
     this.child.on('close', (code) => {
       this.running = false;
       this.returnCode = code ?? 0;
+      this.endDate = new Date();
       this.emit('close');
     });
     this.child.stdout.on('data', (data) => {
