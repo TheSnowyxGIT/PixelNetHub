@@ -5,22 +5,14 @@ import { mongo } from 'mongoose';
 import {
   appConfiguration,
   appsConfiguration,
-  awsConfiguration,
   fontsConfiguration,
-  mongoConfiguration,
 } from 'libs/config/utils-config/src';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [
-        appConfiguration,
-        mongoConfiguration,
-        awsConfiguration,
-        fontsConfiguration,
-        appsConfiguration,
-      ],
+      load: [appConfiguration, fontsConfiguration, appsConfiguration],
     }),
   ],
 })

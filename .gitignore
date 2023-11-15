@@ -41,3 +41,5 @@ customApps
 appdata
 storage
 gen/
+
+pnh-app-config.json

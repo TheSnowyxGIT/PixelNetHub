@@ -3,7 +3,7 @@ import { ConfigType, registerAs } from '@nestjs/config';
 
 export const appsConfiguration = registerAs('apps', () => {
   return {
-    appsLocalDir: process.env['APPS_LOCAL_DIR'] ?? 'stored-apps',
+    appsStoreDirName: process.env['APPS_LOCAL_DIR'] ?? 'apps',
   };
 });
 

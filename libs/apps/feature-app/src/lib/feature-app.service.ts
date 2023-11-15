@@ -2,6 +2,8 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   InjectAppsConfig,
   AppsConfiguration,
+  InjectAppConfig,
+  AppConfiguration,
 } from 'libs/config/utils-config/src';
 import path = require('path');
 import fs = require('fs');
@@ -16,18 +18,25 @@ export class FeatureAppService {
   private readonly applications: Map<string, Map<string, core.AppMetadata>> =
     new Map();
 
+  private appStoragePath: string;
+
   constructor(
     @InjectAppsConfig() private readonly appsConfig: AppsConfiguration,
+    @InjectAppConfig() private readonly appConfig: AppConfiguration,
   ) {
+    this.appStoragePath = path.join(
+      appConfig.appStoragePath,
+      appsConfig.appsStoreDirName,
+    );
+    fs.mkdirSync(this.appStoragePath, { recursive: true });
     this.loadApps();
   }
 
   private async loadApps(): Promise<void> {
-    const appsDir = this.appsConfig.appsLocalDir;
-    const files = fs.readdirSync(appsDir);
+    const files = fs.readdirSync(this.appStoragePath);
     this.logger.log(`Loading apps (Found ${files.length} apps)`);
     for (const file of files) {
-      const appPath = path.join(appsDir, file);
+      const appPath = path.join(this.appStoragePath, file);
       let appMetaData: core.AppMetadata;
       try {
         appMetaData = await core.AppMetadata.load(appPath);
@@ -54,7 +63,7 @@ export class FeatureAppService {
     if (appVersions && appVersions.has(appVersion)) {
       throw new Error('App already exists');
     }
-    const distPath = path.join(this.appsConfig.appsLocalDir, appDirName);
+    const distPath = path.join(this.appStoragePath, appDirName);
 
     if (fs.existsSync(distPath)) {
       fs.rmSync(distPath, { recursive: true, force: true });
@@ -76,7 +85,7 @@ export class FeatureAppService {
       throw new NotFoundException();
     }
     appVersions.delete(version);
-    const distPath = path.join(this.appsConfig.appsLocalDir, appDirName);
+    const distPath = path.join(this.appStoragePath, appDirName);
     if (fs.existsSync(distPath)) {
       fs.rmSync(distPath, { recursive: true, force: true });
     }
