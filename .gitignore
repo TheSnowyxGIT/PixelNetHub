@@ -39,7 +39,5 @@ fonts
 customApps
 
 appdata
-stored-apps
-stored-fonts
-stored-runner-app
+storage
 gen/
