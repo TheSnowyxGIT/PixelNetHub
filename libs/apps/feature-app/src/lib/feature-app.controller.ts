@@ -4,6 +4,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  Query,
 } from '@nestjs/common';
 import { FeatureAppService } from './feature-app.service';
 import { AppDto } from './dto/AppDto';
@@ -11,7 +12,6 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiProperty,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -19,6 +19,9 @@ import {
   InjectAppConfig,
 } from 'libs/config/utils-config/src';
 import { AppDetailsDto } from './dto/AppDetailsDto';
+import { AppDtoPagination } from './dto/AppDtoPagination';
+import { PaginationMeta } from 'libs/utils/pagination';
+import { PaginationQueryDto } from 'libs/utils/pagination-query.dto';
 
 const prefix = 'apps';
 
@@ -32,16 +35,25 @@ export class FeatureAppController {
 
   @Get()
   @ApiOperation({ operationId: 'getApps' })
-  @ApiOkResponse({ type: [AppDto] })
-  async getApps() {
+  @ApiOkResponse({ type: AppDtoPagination })
+  async getApps(@Query() pagination: PaginationQueryDto) {
+    console.log(pagination);
     const apps = await this.appService.getAppsGroupByVersion();
-    return apps.map((obj) => {
+    let data = apps.map((obj) => {
       const dto = AppDto.from(obj);
       return dto;
     });
+    const limit = pagination.limit;
+    const page = pagination.page;
+    data = data.slice((page - 1) * limit, page * limit);
+    const response = new AppDtoPagination();
+    response.data = data;
+    response.meta = PaginationMeta.from(page, limit, apps.length);
+    return response;
   }
 
   @Get(':name')
+  @ApiOperation({ operationId: 'getApp' })
   @ApiOkResponse({ type: AppDto })
   @ApiNotFoundResponse()
   async getApp(@Param('name') name: string) {
@@ -53,6 +65,7 @@ export class FeatureAppController {
   }
 
   @Delete(':name')
+  @ApiOperation({ operationId: 'deleteAppAllVersions' })
   @ApiOkResponse()
   @ApiNotFoundResponse()
   async deleteAppAllVersions(@Param('name') name: string) {
@@ -60,6 +73,7 @@ export class FeatureAppController {
   }
 
   @Get(':name/:version')
+  @ApiOperation({ operationId: 'getAppDetails' })
   @ApiOkResponse({ type: AppDetailsDto })
   @ApiNotFoundResponse()
   async getAppDetails(
@@ -74,6 +88,7 @@ export class FeatureAppController {
   }
 
   @Delete(':name/:version')
+  @ApiOperation({ operationId: 'deleteAppVersion' })
   @ApiOkResponse()
   @ApiNotFoundResponse()
   async deleteAppVersion(

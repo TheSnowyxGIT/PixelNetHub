@@ -24,6 +24,12 @@ export class RunCommand extends CommandRunnerWithNestLogger {
   async run(passedParam: string[], options: RunCommandOptions): Promise<void> {
     this.logger.log(`Launching the '${this.command.name()}' command...`);
     const app = await NestFactory.create(AppModule);
+    app.useGlobalPipes(
+      new ValidationPipe({
+        transform: true,
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    );
 
     const openApiConfig = new DocumentBuilder()
       .setTitle('PNH API')
