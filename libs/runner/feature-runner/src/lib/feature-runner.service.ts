@@ -66,12 +66,11 @@ export class FeatureRunnerService {
       await this.stopApp();
     }
 
-    const streamRouter = this.appLoggerService.getStreamRotator(appMetaData);
     // Start the new app
     this.appInstance = AppCoreInstance.create(
       appMetaData,
       this.phnAppConfigPath,
-      streamRouter,
+      this.appLoggerService.getStreamRotator.bind(this.appLoggerService),
     );
 
     this.appInstance.on('close', () => {

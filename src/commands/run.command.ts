@@ -28,6 +28,7 @@ export class RunCommand extends CommandRunnerWithNestLogger {
       new ValidationPipe({
         transform: true,
         transformOptions: { enableImplicitConversion: true },
+        whitelist: true,
       }),
     );
 

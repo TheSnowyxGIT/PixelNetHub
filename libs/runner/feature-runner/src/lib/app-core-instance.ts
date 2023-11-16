@@ -1,18 +1,26 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { EventEmitter } from 'events';
 import { AppMetadata } from 'pixel-nethub-core/dist';
-import FileStreamRotator from 'file-stream-rotator/lib/FileStreamRotator';
 import { readFileSync } from 'fs';
 import { AppLogger } from 'libs/apps/feature-app-logger/src';
+import { v4 } from 'uuid';
+
+type LoggerBuilder = (
+  appMetaData: AppMetadata,
+  appInstanceId: string,
+) => AppLogger;
 
 export class AppCoreInstance extends EventEmitter {
   static create(
     appMetaData: AppMetadata,
     appPath: string,
-    streamRotator: AppLogger,
+    loggerBuilder: LoggerBuilder,
   ) {
-    return new AppCoreInstance(appMetaData, appPath, streamRotator);
+    return new AppCoreInstance(appMetaData, appPath, loggerBuilder);
   }
+
+  public readonly id: string;
+  private readonly appLogger: AppLogger;
 
   private lastLogs: string[] = [];
 
@@ -21,15 +29,14 @@ export class AppCoreInstance extends EventEmitter {
   public returnCode: number | null = null;
   public startDate = new Date();
   public endDate: Date | null = null;
-  public get logsDir() {
-    return this.streamRotator.logsDir;
-  }
   private constructor(
     public readonly appMetaData: AppMetadata,
     private readonly appPath: string,
-    private readonly streamRotator: AppLogger,
+    private readonly loggerBuilder: LoggerBuilder,
   ) {
     super();
+    this.id = `${v4()}`;
+    this.appLogger = this.loggerBuilder(appMetaData, this.id);
     this.child = spawn('npx', [
       'pnh-core',
       'run',
@@ -45,14 +52,14 @@ export class AppCoreInstance extends EventEmitter {
       this.emit('close');
     });
     this.child.stdout.on('data', (data) => {
-      this.streamRotator.write(data);
+      this.appLogger.write(data);
       this.lastLogs.push(data.toString());
     });
     this.child.stderr.on('data', (data) => {
-      this.streamRotator.write(data);
+      this.appLogger.write(data);
       this.lastLogs.push(data.toString());
     });
-    this.streamRotator.on('rotate', (oldFile: string) => {
+    this.appLogger.on('rotate', (oldFile: string) => {
       this.lastLogs = [readFileSync(oldFile, 'utf-8')];
     });
   }

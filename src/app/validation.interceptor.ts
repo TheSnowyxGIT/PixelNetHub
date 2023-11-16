@@ -5,6 +5,7 @@ import {
   Logger,
   NestInterceptor,
 } from '@nestjs/common';
+import { classToPlain, instanceToPlain } from 'class-transformer';
 import { validate } from 'class-validator';
 import { Observable, lastValueFrom } from 'rxjs';
 
@@ -34,6 +35,8 @@ export class ValidationInterceptor implements NestInterceptor {
       // but continue without throwing an error
     }
 
-    return dtoResponse;
+    return instanceToPlain(dtoResponse, {
+      excludeExtraneousValues: true,
+    }) as any;
   }
 }

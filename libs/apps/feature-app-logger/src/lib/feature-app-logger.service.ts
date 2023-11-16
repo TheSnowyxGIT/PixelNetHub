@@ -1,7 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AppMetadata } from 'pixel-nethub-core';
 import FileStreamRotator from 'file-stream-rotator/lib/FileStreamRotator';
-import { mkdirSync, readdirSync, rmSync, statSync, unlinkSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  unlinkSync,
+} from 'fs';
 import {
   AppConfiguration,
   InjectAppConfig,
@@ -38,7 +46,6 @@ export class FeatureAppLoggerService {
           const stat = statSync(filePath);
           maxMTime = Math.max(maxMTime, stat.mtime.getTime());
         }
-        console.log(maxMTime);
         const now = new Date();
         const diff = now.getTime() - maxMTime;
         const diffMinutes = Math.floor(diff / 1000 / 60);
@@ -54,9 +61,27 @@ export class FeatureAppLoggerService {
     }
   }
 
-  public getStreamRotator(appMetaData: AppMetadata): AppLogger {
-    const date = Date.now();
-    const dir = `${this.logsPath}/${date}-${appMetaData.name}@${appMetaData.version}`;
+  public appLogsExists(appInstanceId: string): boolean {
+    const appPath = path.join(this.logsPath, appInstanceId);
+    if (!existsSync(appPath)) {
+      return false;
+    }
+    return statSync(appPath).isDirectory();
+  }
+
+  public getLogsFiles(appInstanceId: string): string[] {
+    const logsDirPath = path.join(this.logsPath, appInstanceId);
+    let logFiles = readdirSync(logsDirPath);
+    logFiles = logFiles.filter((file) => file.endsWith('.log'));
+    logFiles = logFiles.map((file) => path.join(logsDirPath, file));
+    return logFiles;
+  }
+
+  public getStreamRotator(
+    appMetaData: AppMetadata,
+    appInstanceId: string,
+  ): AppLogger {
+    const dir = `${this.logsPath}/${appInstanceId}`;
     mkdirSync(dir, { recursive: true });
     const rotatingLogStream = FileStreamRotator.getStream({
       filename: `${dir}/${appMetaData.name}`,

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { FeatureAppLoggerService } from 'libs/apps/feature-app-logger/src';
 import {
   AppConfiguration,
   InjectAppConfig,
@@ -8,13 +9,17 @@ import { AppCoreInstance } from 'libs/runner/feature-runner/src';
 import path = require('path');
 
 export interface HistoryEntry {
+  id: string;
   name: string;
   version: string;
   success: boolean;
   startDate: string;
   endDate: string;
-  logs: string;
 }
+
+export type HistoryEntryPopulate = HistoryEntry & {
+  logsAvailable: boolean;
+};
 
 @Injectable()
 export class FeatureAppHistoryService {
@@ -23,10 +28,13 @@ export class FeatureAppHistoryService {
   private historyFileName = 'history.json';
   private historyFilePath: string;
 
-  private history: HistoryEntry[] = [];
-  private historyRetentionPeriod = 1 / 24 / 60 / 2; // in days
+  private history: Record<string, HistoryEntry> = {};
+  private historyRetentionPeriod = 7; // in days
 
-  constructor(@InjectAppConfig() private readonly appConfig: AppConfiguration) {
+  constructor(
+    @InjectAppConfig() private readonly appConfig: AppConfiguration,
+    private readonly appLoggerService: FeatureAppLoggerService,
+  ) {
     this.historyFilePath = path.join(
       this.appConfig.appStoragePath,
       this.historyFileName,
@@ -46,16 +54,19 @@ export class FeatureAppHistoryService {
       now.getTime() - this.historyRetentionPeriod * 24 * 60 * 60 * 1000;
     const diffDate = new Date(diff);
     this.logger.log(`Removing old history entries before ${diffDate}`);
-    this.history = this.history.filter((entry) => {
+    Object.keys(this.history).forEach((key) => {
+      const entry = this.history[key];
       const startDate = new Date(entry.startDate);
-      return startDate.getTime() > diff;
+      if (startDate.getTime() < diff) {
+        delete this.history[key];
+      }
     });
     this.save();
   }
 
   private loadHistory() {
     if (!existsSync(this.historyFilePath)) {
-      this.history = [];
+      this.history = {};
       this.save();
     } else {
       this.logger.log(`Loading history from ${this.historyFilePath}`);
@@ -65,16 +76,48 @@ export class FeatureAppHistoryService {
     }
   }
 
+  public getAllHistory(): HistoryEntry[] {
+    return Object.values(this.history);
+  }
+
+  public getHistoryForApp(name: string): HistoryEntry[] {
+    return this.getAllHistory().filter((entry) => entry.name === name);
+  }
+
+  public getHistoryForAppVersion(
+    name: string,
+    version: string,
+  ): HistoryEntry[] {
+    return this.getAllHistory().filter(
+      (entry) => entry.name === name && entry.version === version,
+    );
+  }
+
+  public populateHistoryEntry(
+    historyEntry: HistoryEntry,
+  ): HistoryEntryPopulate {
+    const logsAvailable = this.appLoggerService.appLogsExists(historyEntry.id);
+    return { ...historyEntry, logsAvailable };
+  }
+
+  public sortHistoryEntries(historyEntries: HistoryEntry[]): HistoryEntry[] {
+    return historyEntries.sort((a, b) => {
+      const aDate = new Date(a.startDate);
+      const bDate = new Date(b.startDate);
+      return bDate.getTime() - aDate.getTime();
+    });
+  }
+
   public addHistoryEntry(entry: AppCoreInstance) {
     this.logger.log(`Adding history entry for ${entry.appMetaData.name}`);
-    this.history.unshift({
+    this.history[entry.id] = {
+      id: entry.id,
       name: entry.appMetaData.name,
       version: entry.appMetaData.version,
       success: entry.returnCode === 0,
       startDate: entry.startDate.toISOString(),
       endDate: entry.endDate.toISOString(),
-      logs: entry.logsDir,
-    });
+    };
     this.removeOldEntries();
   }
 }

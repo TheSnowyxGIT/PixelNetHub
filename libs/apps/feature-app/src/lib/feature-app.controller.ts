@@ -20,8 +20,8 @@ import {
 } from 'libs/config/utils-config/src';
 import { AppDetailsDto } from './dto/AppDetailsDto';
 import { AppDtoPagination } from './dto/AppDtoPagination';
-import { PaginationMeta } from 'libs/utils/pagination';
-import { PaginationQueryDto } from 'libs/utils/pagination-query.dto';
+import { PaginationMeta } from 'libs/utils/pagination/pagination';
+import { PaginationQueryDto } from 'libs/utils/pagination/pagination-query.dto';
 
 const prefix = 'apps';
 

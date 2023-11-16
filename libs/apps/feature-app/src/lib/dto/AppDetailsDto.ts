@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Expose } from 'class-transformer';
 import { IsString } from 'class-validator';
 import { AppMetadata } from 'pixel-nethub-core/dist';
 
@@ -9,9 +10,12 @@ export class AppDetailsDto {
     dto.version = app.version;
     return dto;
   }
+  @Expose()
   @ApiProperty({ example: 'app-name' })
   @IsString()
   name: string;
+
+  @Expose()
   @ApiProperty({
     example: '1.0.0',
   })
